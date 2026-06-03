@@ -1,26 +1,54 @@
 """
 Generator Module - LLM-based answer generation with hallucination control
-Orchestrates the complete RAG pipeline
+Uses Hugging Face Inference API for free LLM access via HF_TOKEN
 """
 
 import os
 import time
 from typing import List, Dict, Any, Optional
-import openai
+
+# Try Hugging Face first (free with HF_TOKEN)
+try:
+    from huggingface_hub import InferenceClient
+    HF_TOKEN = os.getenv("HF_TOKEN", "")
+    HF_AVAILABLE = True if HF_TOKEN else False
+except ImportError:
+    HF_AVAILABLE = False
+
+# Fallback to OpenAI
+if not HF_AVAILABLE:
+    import openai
+    openai.api_key = os.getenv("OPENAI_API_KEY", "")
 
 
 class AnswerGenerator:
     """Generate answers using LLM with strict hallucination control"""
 
-    def __init__(self, model: str = "gpt-3.5-turbo"):
+    def __init__(self, model: str = None):
         """
         Initialize answer generator
 
         Args:
-            model: OpenAI model to use (default: gpt-3.5-turbo)
+            model: Model to use. If None, auto-selects HF or OpenAI
         """
-        openai.api_key = os.getenv("OPENAI_API_KEY", "")
-        self.model = model
+        self.hf_token = os.getenv("HF_TOKEN", "")
+        self.openai_key = os.getenv("OPENAI_API_KEY", "")
+
+        # Auto-select based on available credentials
+        if self.hf_token and HF_AVAILABLE:
+            self.client = InferenceClient(token=self.hf_token)
+            self.model = model or "mistralai/Mistral-7B-Instruct-v0.1"  # Free HF model
+            self.backend = "huggingface"
+            print(f"✓ Using Hugging Face model: {self.model}")
+        elif self.openai_key:
+            import openai
+            openai.api_key = self.openai_key
+            self.model = model or "gpt-3.5-turbo"
+            self.backend = "openai"
+            print(f"✓ Using OpenAI model: {self.model}")
+        else:
+            raise ValueError("Either HF_TOKEN or OPENAI_API_KEY must be set")
+
         self.max_tokens = 500
 
     async def generate_answer(
@@ -56,25 +84,36 @@ class AnswerGenerator:
             # Build system prompt with strict instructions
             system_prompt = self._build_system_prompt(filters, context_text)
 
-            # Call OpenAI API with function calling for reliability
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": system_prompt
-                    },
-                    {
-                        "role": "user",
-                        "content": query
-                    }
-                ],
-                temperature=0.2,  # Low temperature for factual responses
-                max_tokens=self.max_tokens,
-                top_p=0.9
-            )
-
-            answer_text = response['choices'][0]['message']['content']
+            # Call LLM (Hugging Face or OpenAI)
+            if self.backend == "huggingface":
+                # Use Hugging Face Inference API (FREE!)
+                response = self.client.text_generation(
+                    prompt=f"{system_prompt}\n\nUser: {query}\nAssistant:",
+                    max_new_tokens=self.max_tokens,
+                    temperature=0.2,
+                    top_p=0.9
+                )
+                answer_text = response.strip()
+            else:
+                # Fallback to OpenAI
+                import openai
+                response = openai.ChatCompletion.create(
+                    model=self.model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": system_prompt
+                        },
+                        {
+                            "role": "user",
+                            "content": query
+                        }
+                    ],
+                    temperature=0.2,
+                    max_tokens=self.max_tokens,
+                    top_p=0.9
+                )
+                answer_text = response['choices'][0]['message']['content']
 
             # Analyze for hallucination risk
             hallucination_risk = self._assess_hallucination_risk(

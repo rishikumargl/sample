@@ -1,0 +1,69 @@
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+
+# Data Validation & Configuration
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database & ORM
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+alembic==1.13.0
+
+# Hugging Face (PRIMARY - Free Embeddings & LLM!)
+sentence-transformers==2.2.2
+huggingface-hub==0.20.3
+
+# Vector Database & Search
+chromadb==0.4.18
+numpy==1.24.3
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# Document Processing
+PyPDF2==3.0.1
+python-docx==0.8.11
+markdown==3.5.1
+pypdf==4.0.1
+
+# Text Processing & NLP
+nltk==3.8.1
+
+# HTTP & API
+httpx==0.25.1
+requests==2.31.0
+aiohttp==3.9.1
+
+# Authentication & Security (Optional)
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.1
+cryptography==41.0.7
+
+# CORS Support
+fastapi-cors==0.0.6
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+
+# Logging & Monitoring
+python-json-logger==2.0.7
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+click==8.1.7
+
+# Development Tools
+black==23.12.0
+flake8==6.1.0
+isort==5.13.2
+mypy==1.7.1
+
+# OpenAI (OPTIONAL - Fallback if HF_TOKEN not available)
+openai==1.3.0
