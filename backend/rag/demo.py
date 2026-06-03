@@ -7,12 +7,12 @@ import asyncio
 import os
 from pathlib import Path
 
-from embeddings import EmbeddingGenerator
-from chunking_strategies import FixedSizeChunking, SemanticChunking
-from vector_store import ChromaVectorStore
-from retrieval import VectorRetrieval, KeywordRetrieval, HybridRetrieval
-from generator import AnswerGenerator, RAGOrchestrator
-from ingestion import DocumentIngestionPipeline
+from .embeddings import EmbeddingGenerator
+from .chunking_strategies import FixedSizeChunking, SemanticChunking
+from .vector_store import ChromaVectorStore
+from .retrieval import VectorRetrieval, KeywordRetrieval, HybridRetrieval
+from .generator import AnswerGenerator, RAGOrchestrator
+from .ingestion import DocumentIngestionPipeline
 
 
 # Sample documents for testing

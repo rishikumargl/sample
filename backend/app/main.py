@@ -46,7 +46,7 @@ vector_store = ChromaVectorStore(persist_dir="./data/vector_store")
 # Initialize RAG components
 embedding_generator = EmbeddingGenerator()
 vector_retrieval = VectorRetrieval(vector_store)
-answer_generator = AnswerGenerator(model="gpt-3.5-turbo")
+answer_generator = AnswerGenerator()  # Uses local distilgpt2 model
 ingestion_pipeline = DocumentIngestionPipeline(chunking_strategy="semantic")
 
 # Initialize RAG orchestrator
@@ -67,6 +67,7 @@ print("✓ RAG components initialized")
 class ChatRequest(BaseModel):
     """Chat request schema"""
     query: str
+    user_id: str
     department: str
     category: str = "general"
     chunking_strategy: str = "semantic"
@@ -99,6 +100,12 @@ class ChatResponse(BaseModel):
 # ==========================================
 # HEALTH & MONITORING
 # ==========================================
+
+@app.get("/test-response")
+async def test_response():
+    """Test endpoint to verify responses"""
+    return {"status": "test response working", "timestamp": "2024-01-01"}
+
 
 @app.get("/health")
 async def health_check():
@@ -146,6 +153,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
     - Returns answers only from department-specific documents
     - Includes hallucination control and source attribution
     """
+    import sys
+    print(f"🔵 Chat endpoint called with query: {request.query}", file=sys.stderr, flush=True)
     try:
         # Validate department
         valid_departments = ["engineering", "hr", "operations", "product"]
@@ -168,12 +177,15 @@ async def chat(request: ChatRequest) -> ChatResponse:
             "top_k": request.top_k
         }
 
+        print(f"DEBUG: Processing query: {request.query[:50]}")
         # Process query through RAG orchestrator
         result = await rag_orchestrator.process_query(
             query=request.query,
             filters=filters,
             options=options
         )
+        print(f"DEBUG: Result keys: {list(result.keys())}")
+        print(f"DEBUG: Result answer: {result.get('answer', '')[:50]}")
 
         # Transform to ChatResponse format
         return ChatResponse(
@@ -183,8 +195,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
             confidence=result['confidence'],
             hallucination_risk=result['hallucination_risk'],
             is_fallback=result.get('is_fallback', False),
-            retrieval_time_ms=result['retrieval_time_ms'],
-            generation_time_ms=result['generation_time_ms'],
+            retrieval_time_ms=result.get('total_time_ms', 0),  # Use total_time_ms as retrieval
+            generation_time_ms=result.get('total_time_ms', 0),  # Use total_time_ms as generation
             total_time_ms=result['total_time_ms'],
             chunks_retrieved=result['chunks_retrieved'],
             department=result['department']

@@ -10,7 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from dataclasses import asdict
 
-from chunking_strategies import Chunk, FixedSizeChunking, SemanticChunking, HybridChunking
+from .chunking_strategies import Chunk, FixedSizeChunking, SemanticChunking, HybridChunking
 
 
 class DocumentParser:
